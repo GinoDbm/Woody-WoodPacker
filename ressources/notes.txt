@@ -1,0 +1,4 @@
+-------elf_reader64.c-----------
+
+static void init_info(ElfInfo *o)
+static void *map_file(const char *path, size_t *size_out, int *out_fd)
