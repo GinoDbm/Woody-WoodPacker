@@ -1,4 +1,35 @@
 -------elf_reader64.c-----------
 
-static void init_info(ElfInfo *o)
-static void *map_file(const char *path, size_t *size_out, int *out_fd)
+static void init_info(ElfInfo *o) :
+
+This function initialize all the members of the ELfInfo struct.
+All the members will be initialized to 0 with the help of  our ft_memset.
+
+--------------------------------------------------------------------------------------------
+
+static void *map_file(const char *path, size_t *size_out, int *out_fd) :
+
+This function gonna map the file located at path into the process's virtual memory.
+All the required checks are done before calling mmap.
+If it's needed, it can keeps the original fd by stocking it in out_fd.
+The function returns a pointer to the mapped region on success, otherwise, it returns NULL.
+
+--------------------------------------------------------------------------------------------
+
+static int validate_elf64(void *map, size_t mapsize) :
+
+This function gonna check if the file is an ELF file and more precisely, an ELF64 file.
+It's checked by checking the first char of the e_ident array. (0xf7, E, L, F).
+It returns -1 if the file is not an ELF64, and returns 0 if the file is one.
+
+--------------------------------------------------------------------------------------------
+
+static int parse_elf64(void *map, size_t mapsize, ElfInfo *o) :
+
+This function gonna fills our struct ElfInfo.
+Before it fills the struct, it performs all the required checks
+If there's not executable segment to load, the 'found' variable gonna be 0 and the function
+gonna return -1 ; Else, the function returns 0.
+
+--------------------------------------------------------------------------------------------
+

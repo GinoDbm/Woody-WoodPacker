@@ -86,12 +86,12 @@ static int validate_elf64(void *map, size_t mapsize)
 /* Function that fills our struct ElfInfo */
 static int parse_elf64(void *map, size_t mapsize, ElfInfo *o)
 {
-    if(!map || !o)
+    if(!map || !o)  //Check if map or ElfInfo variable is empty
         return (-1);
     
-    Elf64_Ehdr *eh = (Elf64_Ehdr *)map;
+    Elf64_Ehdr *eh = (Elf64_Ehdr *)map; //Casts the map to Elf64_Ehdr (ELF64 header type)
 
-    if((size_t)eh->e_ehsize > sizeof(Elf64_Ehdr) || eh->e_phoff + eh->e_phnum * eh->e_phentsize > mapsize)
+    if((size_t)eh->e_ehsize > sizeof(Elf64_Ehdr) || eh->e_phoff + eh->e_phnum * eh->e_phentsize > mapsize) //Protection again corrupted files, invalid read, offset overflow
     {
         fprintf(stderr, "Invalid ELF header or program headers out of bounds\n");
         return -1;
@@ -105,7 +105,7 @@ static int parse_elf64(void *map, size_t mapsize, ElfInfo *o)
     int found = 0;
     for(int i=0;i<eh->e_phnum;++i)
     {
-        if(ph[i].p_type == PT_LOAD && (ph[i].p_flags & PF_X))
+        if(ph[i].p_type == PT_LOAD && (ph[i].p_flags & PF_X)) //Checks if there's an executable segment to load
         {
             o->seg_offset = ph[i].p_offset;
             o->seg_vaddr  = ph[i].p_vaddr;
