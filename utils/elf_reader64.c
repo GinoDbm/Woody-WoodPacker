@@ -70,7 +70,7 @@ static int validate_elf64(void *map, size_t mapsize)
     if (ident[EI_MAG0] != ELFMAG0 || ident[EI_MAG1] != ELFMAG1 ||
         ident[EI_MAG2] != ELFMAG2 || ident[EI_MAG3] != ELFMAG3)
     {
-        ftprintf(stderr, "Not an ELF file\n");
+        fprintf(stderr, "Not an ELF file\n");
         return (-1);
     }
 
