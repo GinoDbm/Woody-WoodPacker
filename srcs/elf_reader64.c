@@ -1,7 +1,7 @@
 #include "../includes/umbrella.h"
 
 /* Function to initialize our struct */
-static void init_info(ElfInfo *o)
+void init_info(ElfInfo *o)
 {
     if(!o)
         return ;
@@ -10,7 +10,7 @@ static void init_info(ElfInfo *o)
 }
 
 /* Function that mmap the file (read-only) */
-static void *map_file(const char *path, size_t *size_out, int *out_fd)
+void *map_file(const char *path, size_t *size_out, int *out_fd)
 {
     if (!path || !size_out)
         return NULL;
@@ -61,7 +61,7 @@ static void *map_file(const char *path, size_t *size_out, int *out_fd)
 }
 
 /* Function that checks if the file is a ELF64 file. */
-static int validate_elf64(void *map, size_t mapsize)
+int validate_elf64(void *map, size_t mapsize)
 {
     if (!map || mapsize < EI_NIDENT)
         return (-1);
@@ -84,7 +84,7 @@ static int validate_elf64(void *map, size_t mapsize)
 }
 
 /* Function that fills our struct ElfInfo */
-static int parse_elf64(void *map, size_t mapsize, ElfInfo *o)
+int parse_elf64(void *map, size_t mapsize, ElfInfo *o)
 {
     if(!map || !o)  //Check if map or ElfInfo variable is empty
         return (-1);

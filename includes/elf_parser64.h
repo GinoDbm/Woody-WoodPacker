@@ -3,8 +3,8 @@
 
 typedef struct {
     int is64;
-    int is_pie;               // Flag for DYN type (PIE file)
-    uint64_t entry;           // Entrypoint (virtual address)
+    int is_pie;               
+    uint64_t entry;
     // executable segment (PT_LOAD with PF_X)
     uint64_t seg_offset;
     uint64_t seg_vaddr;
@@ -19,4 +19,7 @@ typedef struct {
     int has_text_section;
 } ElfInfo;
 
-int elf_parse(const char *path, ElfInfo *out);
+void init_info(ElfInfo *o);
+void *map_file(const char *path, size_t *size_out, int *out_fd);
+int validate_elf64(void *map, size_t mapsize);
+int parse_elf64(void *map, size_t mapsize, ElfInfo *o);

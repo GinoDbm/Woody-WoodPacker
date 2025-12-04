@@ -24,3 +24,28 @@ Elf64_Phdr *find_exec_segment(void *map, size_t mapsize)
 
     return NULL;
 }
+
+void *get_exec_segment_ptr(void *map, ElfInfo *info)
+{
+    if (!info || !map)
+        return NULL;
+    if (info->seg_filesz == 0)
+        return NULL;
+    
+    return (char *)map + info->seg_offset;
+}
+
+unsigned char *save_original_text(unsigned char *text, size_t size)
+{
+    unsigned char *save;
+
+    if(!text || !size)
+        return NULL;
+    
+    save = malloc(size);
+    if (!save)
+        return NULL;
+    
+    memcpy(save, text, size);
+    return (save);
+}
