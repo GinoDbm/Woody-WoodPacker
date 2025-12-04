@@ -1,3 +1,6 @@
+#ifndef ELF_PARSER64_H
+#define ELF_PARSER64_H
+
 #pragma once
 #include "umbrella.h"
 
@@ -24,3 +27,5 @@ void *map_file(const char *path, size_t *size_out, int *out_fd);
 
 int validate_elf64(void *map, size_t mapsize);
 int parse_elf64(void *map, size_t mapsize, ElfInfo *o);
+
+#endif

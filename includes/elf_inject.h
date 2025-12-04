@@ -1,3 +1,6 @@
+#ifndef ELF_INJECT_H
+#define ELF_INJECT_H
+
 #pragma once
 #include "umbrella.h"
 
@@ -10,3 +13,4 @@ int inject_payload(void *map, size_t mapsize, ElfInfo *info, unsigned char *payl
 int write_infected_file(const char *output_path, void *map, size_t size);
 int already_infected(void *map, ElfInfo *info);
 
+#endif

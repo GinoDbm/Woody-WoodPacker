@@ -1,8 +1,8 @@
 #ifndef ENCRYPT_H
 #define ENCRYPT_H
 
-#include <stddef.h>
-#include <stdint.h>
+#pragma once
+#include "umbrella.h"
 
 #define XTEA_DELTA  0x9E3779B9
 #define XTEA_ROUNDS 32
