@@ -25,6 +25,7 @@
 /* Personal headers */
 #include "elf_parser64.h"
 #include "elf_inject.h"
+#include "encrypt.h"
 //#include "woody.h"
 //#include "woody_generic.h"
 //#include "woody_elf.h"     /* ELF-specific declarations */
