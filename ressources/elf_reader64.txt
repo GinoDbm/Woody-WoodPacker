@@ -28,6 +28,3 @@ This function gonna fills our struct ElfInfo.
 Before it fills the struct, it performs all the required checks
 If there's not executable segment to load, the 'found' variable gonna be 0 and the function
 gonna return -1 ; Else, the function returns 0.
-
---------------------------------------------------------------------------------------------
-
