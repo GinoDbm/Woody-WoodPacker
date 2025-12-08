@@ -1,0 +1,51 @@
+FICHIER ELF :
+
+Au tout debut du fichier il y a le ELF Header, ces attributs sont les suivants :
+
+-e_ident[EI_IDENT]  // Ce sont les premiers octets qui vont contenir de la data pour identifier le fichier.
+-e_type             // Contient le type du fichier (Pas de type, Executable, Core file, etc....)
+-e_machine          // Contient l'architecture requis pour un fichier seul.
+-e_version          // Identifie la version du fichier objet.
+-e_entry            // Indique l'adresse virtuelle a laquelle le CPU commence a executer le programme apres le chargement des segments en memoire par le loader.
+-e_phoff            // L'offset depuis le debut du fichier jusqu'au debut de la table des segments.
+-e_shoff            // L'offset depuis le debut du fichier jusqu'au debut de la table des sections.
+-e_flags            // Les flags pour le processeur. (EF_flag)
+-e_ehsize           // Taille (en octets) du header ELF.
+-e_phentsize        // Taille (en octets) d'une entree de la table des segments.
+-e_phnum            // Nombre d'entrees de la table des segments.
+-e_shnum            // Nombre d'entrees de la table des sections.
+-e_shstrndx         // Index de la section shstrtab.
+                       (shstrtab est une section qui contient le nom de toutes les autres)
+
+(Source : https://refspecs.linuxfoundation.org/elf/gabi4+/ch4.eheader.html#elfid)
+
+Ensuite on a la table des segments (Program Header Table), c'est comme un tableau qui va contenir
+tous les segments du fichier, un segment est constitue comme ceci :
+
+-p_type             //  Type de segment(LOAD, DYNAMIC, INTERP...)
+-p_offset           //  L'offset en partant du debut du fichier pour arriver au premier octet du segment.
+-p_vaddr            //  L'adresse virtuelle a laquelle est le premier octet du segment en memoire.
+-p_paddr            //  Quand l'addressing physique est pertinent, adresse physique du segment.
+-p_filesz           //  Le nombre d'octets du segment dans l'image du fichier (0 possible).
+-p_memsz            //  Le nombre d'octets du segment dans l'image de la memoire (0 possible).
+-p_flags            //  Les differents flags du segments (Read, Write, Execute).
+-p_align            //  La valeur a laquelle les segments sont alignes en memoire et dans le fichier.
+
+(Source : https://refspecs.linuxbase.org/elf/gabi4+/ch5.pheader.html)
+
+A la suite de la table des segments on va trouver les segments evidemment.
+Apres les segments, on a la Table des sections (Section Header Table), chaque section possede ces attributs : 
+
+-sh_name            // Nom de la section, la valeur est un index. (.shstrtab + sh_name)
+-sh_type            // Le type de la section.
+-sh_flags           // Differents flag de la section. (SHF_flag)
+-sh_addr            // Si la section doit etre chargee dans l'image memoire d'un processus, cet attribut contient l'adresse a laquelle le premier octet de la section devrait etre.
+-sh_offset          // Offset depuis le debut du fichier jusqu'au premier octet de la section.
+-sh_size            // Taille de la section en octets.
+-sh_link            // Contient un index vers une autre section dans la meme table.
+-sh_info            // Informations supplementaires sur le segment (depend du type de segment)
+-sh_addraling       // sh_addr doit etre un multiple de sh_addraling. (0 ou 1 = pas de contraintes d'alignements) (puissance de 2 = alignement requis sur cette puissance)
+-sh_entsize         // Taille en octets d'une entree de la table. (0 si la table n'a pas de taille d'entree fixe)
+
+(Source : https://refspecs.linuxbase.org/elf/gabi4+/ch4.sheader.html)
+

@@ -1,0 +1,47 @@
+Elf64_Phdr *find_exec_segment(void *map, size_t mapsize) :
+
+This funtion gonna browse all the segments and check if the segment is loaded and executable.
+Check of PT_LOAD in p_type and apply the PF_X mask on p_flag. If it's true, the function
+return the segment.
+
+-------------------------------------------------------------------------------------------------------------------------------
+
+void *get_exec_segment_ptr(void *map, ElfInfo *info) :
+
+This function gives the adress of the executable segment.
+
+-------------------------------------------------------------------------------------------------------------------------------
+
+unsigned char *save_original_text(unsigned char *text, size_t size) :
+
+This function copies the orignal .text section to keep it in a buffer before we 
+perform our XTEA algorithm on it.
+
+-------------------------------------------------------------------------------------------------------------------------------
+
+size_t align_size(size_t size, size_t align) :
+
+This functions checks if an align is needed, and if it's the case, performs it.
+The return use the alignement mask (~(align - 1)), this mask invert the bits.
+
+-------------------------------------------------------------------------------------------------------------------------------
+
+int inject_payload(void *map, size_t mapsize, ElfInfo *info, unsigned char *payload, size_t payload_size, uint64_t *old_entry) :
+
+This function gonna inject our payload at the end of the segment, then gonna increase
+the segment size by adding it's aligend size and finally, change the entrypoint.
+
+-------------------------------------------------------------------------------------------------------------------------------
+
+int write_infected_file(const char *output_path, void *map, size_t size) :
+
+This function writes the modified ELF (that is in memory) in a file on the disk.
+It performs all the necessaries checks.
+
+-------------------------------------------------------------------------------------------------------------------------------
+
+int already_infected(void *map, ElfInfo *info) :
+
+This function checks if the ELF is already infected. We can check this just by looking
+at our entrypoint. If the entrypoint is in our segment, then our previous fonction
+changed it, so the file is already_infected et we can return 1, otherwise, we return 0.

