@@ -23,7 +23,7 @@
 #include <elf.h>
 
 /* Personal headers */
-#include "elf_parser64.h"
+#include "elf_reader64.h"
 #include "elf_inject.h"
 #include "encrypt.h"
 //#include "woody.h"

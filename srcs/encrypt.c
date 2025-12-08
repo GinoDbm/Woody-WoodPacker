@@ -32,55 +32,20 @@
 
 void encrypt_text_xtea(unsigned char *text, size_t size, const uint32_t key[4])
 {
-    size_t blocks = (size + 7) / 8; // arrondi vers le haut
-    uint32_t block[2];
+    size_t blocks = size / 8;
+    uint32_t *ptr = (uint32_t *)text;
 
     for (size_t i = 0; i < blocks; i++)
-    {
-        block[0] = 0;
-        block[1] = 0;
-        for (size_t j = 0; j < 8; j++)
-        {
-            size_t idx = i * 8 + j;
-            if (idx < size)
-                ((unsigned char*)block)[j] = text[idx];
-        }
-        xtea_encrypt_block(block, key);
-
-        for (size_t j = 0; j < 8; j++)
-        {
-            size_t idx = i * 8 + j;
-            if (idx < size)
-                text[idx] = ((unsigned char*)block)[j];
-        }
-    }
+        xtea_encrypt_block(&ptr[i * 2], key);
 }
+
 
 
 void decrypt_text_xtea(unsigned char *text, size_t size, const uint32_t key[4])
 {
-    size_t blocks = (size + 7) / 8;
-    uint32_t block[2];
+    size_t blocks = size / 8;
+    uint32_t *ptr = (uint32_t *)text;
 
     for (size_t i = 0; i < blocks; i++)
-    {
-        
-        block[0] = 0;
-        block[1] = 0;
-
-        for (size_t j = 0; j < 8; j++)
-        {
-            size_t idx = i * 8 + j;
-            if (idx < size)
-                ((unsigned char*)block)[j] = text[idx];
-        }
-        xtea_decrypt_block(block, key);
-        
-        for (size_t j = 0; j < 8; j++)
-        {
-            size_t idx = i * 8 + j;
-            if (idx < size)
-                text[idx] = ((unsigned char*)block)[j];
-        }
-    }
+        xtea_decrypt_block(&ptr[i * 2], key);
 }
