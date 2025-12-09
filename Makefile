@@ -2,38 +2,42 @@
 #           VARIABLES           #
 # ============================= #
 
-NAME        = woody
+NAME        = woody-woodpacker
 CC          = cc
 CFLAGS      = -Wall -Wextra -Werror
 INCLUDES    = -Iincludes
 
 SRCS        = $(wildcard srcs/*.c)
-OBJS        = $(SRCS:.c=.o)
+
+OBJDIR      = objects
+OBJS        = $(SRCS:srcs/%.c=$(OBJDIR)/%.o)
 
 STUB_SRC    = stub/stub.c
 STUB_OBJ    = stub/stub.o
-STUB_BIN    = stub/stub.bin   # binaire brut temporaire
+STUB_BIN    = stub/stub.bin
 
 # ============================= #
 #            RULES              #
 # ============================= #
 
-all: $(STUB_OBJ) $(NAME)
+all: $(OBJDIR) $(STUB_OBJ) $(NAME)
 
-# Build woody with stub object linked
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
+
+# Link final packer
 $(NAME): $(OBJS) $(STUB_OBJ)
 	$(CC) $(CFLAGS) $(OBJS) $(STUB_OBJ) -o $(NAME)
 
-# Compile stub.c → stub.o via binaire intermédiaire
-# Étapes : 1) .o freestanding, 2) binaire brut, 3) .o final avec ld -b binary
+# Compile stub with binary embedding
 $(STUB_OBJ): $(STUB_SRC)
 	$(CC) -Wall -Wextra -Werror -ffreestanding -fno-pie -c $(STUB_SRC) -o stub/stub_freestanding.o
 	objcopy -O binary stub/stub_freestanding.o $(STUB_BIN)
 	ld -r -b binary -o $(STUB_OBJ) $(STUB_BIN)
 	rm -f stub/stub_freestanding.o
 
-# Build all .c → .o (Woody sources)
-%.o: %.c
+# Compile .c → objects/*.o
+$(OBJDIR)/%.o: srcs/%.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 # ============================= #
@@ -42,9 +46,11 @@ $(STUB_OBJ): $(STUB_SRC)
 
 clean:
 	rm -f $(OBJS) $(STUB_OBJ) $(STUB_BIN)
+	rm -rf $(OBJDIR)
 
 fclean: clean
 	rm -f $(NAME)
+	rm -f woody
 
 re: fclean all
 

@@ -43,7 +43,7 @@ void *map_file(const char *path, size_t *size_out, int *out_fd)
         return NULL;
     }
 
-    void *map = mmap(NULL, (size_t)size, PROT_READ, MAP_PRIVATE, fd, 0);
+    void *map = mmap(NULL, (size_t)size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
     if (map == MAP_FAILED)
     {
         perror("mmap");

