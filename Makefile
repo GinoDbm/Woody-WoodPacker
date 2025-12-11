@@ -10,7 +10,7 @@ INCLUDES    = -Iincludes
 SRCS        = $(wildcard srcs/*.c)
 
 OBJDIR      = objects
-OBJS        = $(SRCS:srcs/%.c=$(OBJDIR)/%.o)
+OBJS = objects/elf_inject.o objects/elf_reader64.o objects/main.o
 
 STUB_SRC    = stub/stub.c
 STUB_OBJ    = stub/stub.o
