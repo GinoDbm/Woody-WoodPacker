@@ -30,11 +30,15 @@ $(NAME): $(OBJS) $(STUB_OBJ)
 	$(CC) $(CFLAGS) $(OBJS) $(STUB_OBJ) -o $(NAME)
 
 # Compile stub with binary embedding
-$(STUB_OBJ): $(STUB_SRC)
-	$(CC) -Wall -Wextra -Werror -ffreestanding -fno-pie -c $(STUB_SRC) -o stub/stub_freestanding.o
-	objcopy -O binary stub/stub_freestanding.o $(STUB_BIN)
+# 1. Compile to object file with freestanding flags
+# 2. Link with custom linker script to resolve RIP-relative relocations
+# 3. Extract binary from the linked ELF
+$(STUB_OBJ): $(STUB_SRC) stub/stub.ld
+	$(CC) -Wall -Wextra -Werror -ffreestanding -fno-pie -fno-asynchronous-unwind-tables -fno-stack-protector -c $(STUB_SRC) -o stub/stub_freestanding.o
+	ld -T stub/stub.ld -nostdlib stub/stub_freestanding.o -o stub/stub_linked.elf
+	objcopy -O binary stub/stub_linked.elf $(STUB_BIN)
 	ld -r -b binary -o $(STUB_OBJ) $(STUB_BIN)
-	rm -f stub/stub_freestanding.o
+	rm -f stub/stub_freestanding.o stub/stub_linked.elf
 
 # Compile .c → objects/*.o
 $(OBJDIR)/%.o: srcs/%.c

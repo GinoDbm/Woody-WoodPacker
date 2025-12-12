@@ -18,6 +18,16 @@ __attribute__((naked))
 void _start(void)
 {
     __asm__ volatile(
+        /* Save all registers that the original _start expects to be preserved
+           RDX contains rtld_fini pointer from dynamic linker
+           RSP points to argc/argv/envp on stack */
+        "push %rdx\n"
+        "push %rdi\n"
+        "push %rsi\n"
+        "push %rcx\n"
+        "push %r8\n"
+        "push %r9\n"
+
         /* get current RIP */
         "lea 0f(%rip), %rbx\n"
 
@@ -44,6 +54,15 @@ void _start(void)
         "mov (%rax), %rax\n"
         "add %rax, %rbx\n"
 
+        /* Restore registers */
+        "pop %r9\n"
+        "pop %r8\n"
+        "pop %rcx\n"
+        "pop %rsi\n"
+        "pop %rdi\n"
+        "pop %rdx\n"
+
+        /* Jump to original entry */
         "jmp *%rbx\n"
         "0:\n"
     );
