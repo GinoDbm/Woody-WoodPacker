@@ -22,10 +22,10 @@ typedef struct {
     int has_text_section;
 } ElfInfo;
 
-void init_info(ElfInfo *o);
-void *map_file(const char *path, size_t *size_out, int *out_fd);
+void init_info(ElfInfo *o); // Initializes ElfInfo struct to zero
+void *map_file(const char *path, size_t *size_out, int *out_fd); // Memory-maps a file (read/write, private)
 
-int validate_elf64(void *map, size_t mapsize);
-int parse_elf64(void *map, size_t mapsize, ElfInfo *o);
+int validate_elf64(void *map, size_t mapsize); // Validates ELF64 magic and class
+int parse_elf64(void *map, size_t mapsize, ElfInfo *o); // Parses ELF64 headers and fills ElfInfo
 
 #endif
