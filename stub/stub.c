@@ -47,6 +47,9 @@ void decrypt(uint8_t *buf, size_t size)
     }
 }
 
+/* Exported symbol for reference point - offset extracted at build time */
+void _ref_point(void);
+
 __attribute__((naked))
 void _start(void)
 {
@@ -63,10 +66,11 @@ void _start(void)
 
         /* Get current address using call/pop trick
            The call pushes the address of the next instruction */
-        "call 1f\n"
-        "1:\n"
+        "call _ref_point\n"
+        ".global _ref_point\n"
+        "_ref_point:\n"
         "pop %rbx\n"
-        /* rbx now contains the runtime address of label 1: */
+        /* rbx now contains the runtime address of _ref_point */
 
         /* Calculate base: rbx - offset_of_label_1_from_stub_data_start
            The offsets in g_payload_off and g_old_entry are relative to stub data start (offset 0)

@@ -170,10 +170,9 @@ int main(int ac, char **av)
     memcpy(map + stub_file_offset, stub_data, stub_size);
 
     /* ---- Patch the stub ---- */
-    /* The stub uses call/pop to get current RIP at label 1:
-       Label 1: is at offset: STUB_START_OFFSET + 8 (pushes) + 5 (call) = +13 bytes
-       (CET/endbr64 disabled via -fcf-protection=none) */
-    uint64_t ref_vaddr = stub_vaddr + STUB_START_OFFSET + 13;
+    /* The stub uses call/pop to get current RIP at _ref_point
+       STUB_REF_OFFSET is auto-extracted from the compiled stub */
+    uint64_t ref_vaddr = stub_vaddr + STUB_REF_OFFSET;
     int64_t payload_rel = (int64_t)payload_addr - (int64_t)ref_vaddr;
     int64_t entry_rel = (int64_t)original_entry - (int64_t)ref_vaddr;
     patch_stub(map + stub_file_offset, stub_size, (uint64_t)payload_rel, payload_size, (uint64_t)entry_rel);
