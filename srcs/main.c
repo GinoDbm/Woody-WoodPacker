@@ -1,4 +1,5 @@
 #include "../includes/umbrella.h"
+#include "../includes/stub_offset.h"
 
 void patch_stub(unsigned char *stub, size_t stub_size, uint64_t payload_addr, uint64_t payload_size, uint64_t original_entry);
 void encrypt_text_xtea(unsigned char *text, size_t size, const uint32_t key[4]);
@@ -124,6 +125,31 @@ int main(int ac, char **av)
     uint64_t stub_file_offset = text_seg->p_offset + text_seg->p_filesz;
     uint64_t stub_vaddr       = text_seg->p_vaddr + text_seg->p_filesz;
 
+    /* Find the next segment after text to check available gap */
+    uint64_t next_seg_offset = (uint64_t)-1;
+    for (int i = 0; i < eh->e_phnum; i++)
+    {
+        if (ph[i].p_type == PT_LOAD && ph[i].p_offset > text_seg->p_offset)
+        {
+            if (ph[i].p_offset < next_seg_offset)
+                next_seg_offset = ph[i].p_offset;
+        }
+    }
+
+    /* Check if there's enough gap before the next segment */
+    if (next_seg_offset != (uint64_t)-1)
+    {
+        uint64_t available_gap = next_seg_offset - stub_file_offset;
+        if (stub_size > available_gap)
+        {
+            fprintf(stderr, "Error: Not enough space between segments (need %zu bytes, have %lu)\n",
+                    stub_size, available_gap);
+            fprintf(stderr, "This binary has segments too close together for stub injection\n");
+            munmap(map, final_size);
+            return 1;
+        }
+    }
+
     /* Validate stub injection bounds */
     if (stub_file_offset + stub_size > final_size)
     {
@@ -144,14 +170,16 @@ int main(int ac, char **av)
     memcpy(map + stub_file_offset, stub_data, stub_size);
 
     /* ---- Patch the stub ---- */
-    /* The stub computes base = RIP & ~0xfff, so offsets must be relative
-       to that aligned address, not to the actual ELF base (0 for PIE) */
-    uint64_t aligned_stub_page = stub_vaddr & ~0xFFFULL;
-    patch_stub(map + stub_file_offset, stub_size, payload_addr - aligned_stub_page, payload_size, original_entry - aligned_stub_page);
+    /* The stub uses call/pop to get current RIP at label 1:
+       Label 1: is at offset: STUB_START_OFFSET + 8 (pushes) + 5 (call) = +13 bytes
+       (CET/endbr64 disabled via -fcf-protection=none) */
+    uint64_t ref_vaddr = stub_vaddr + STUB_START_OFFSET + 13;
+    int64_t payload_rel = (int64_t)payload_addr - (int64_t)ref_vaddr;
+    int64_t entry_rel = (int64_t)original_entry - (int64_t)ref_vaddr;
+    patch_stub(map + stub_file_offset, stub_size, (uint64_t)payload_rel, payload_size, (uint64_t)entry_rel);
 
 /* ---- Redirect entry ---- */
-/* stub.bin layout with XTEA: .data (48 bytes) + decrypt + _start at offset 0x2de */
-    #define STUB_START_OFFSET 0x2de
+/* stub.bin layout with XTEA: .data + decrypt + _start (offset auto-generated) */
     eh = (Elf64_Ehdr *)map;
     eh->e_entry = stub_vaddr + STUB_START_OFFSET;
 

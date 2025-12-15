@@ -1,8 +1,8 @@
 #include "stub.h"
 
-/* Values patched by the packer */
-uint64_t g_old_entry    = MAGIC_OLD_ENTRY;    // VA offset, not absolute address
-uint64_t g_payload_off  = MAGIC_PAYLOAD_ADDR; // offset relative to ELF base
+/* Values patched by the packer (signed offsets relative to stub entry) */
+int64_t  g_old_entry    = MAGIC_OLD_ENTRY;    // signed offset from stub to original entry
+int64_t  g_payload_off  = MAGIC_PAYLOAD_ADDR; // signed offset from stub to payload
 size_t   g_payload_size = MAGIC_PAYLOAD_SIZE;
 
 /* WOODY message (14 bytes: 13 chars + newline) */
@@ -61,31 +61,37 @@ void _start(void)
         "push %r8\n"
         "push %r9\n"
 
-        /* get current RIP */
-        "lea 0f(%rip), %rbx\n"
+        /* Get current address using call/pop trick
+           The call pushes the address of the next instruction */
+        "call 1f\n"
+        "1:\n"
+        "pop %rbx\n"
+        /* rbx now contains the runtime address of label 1: */
 
-        /* align down to page -> real ELF load base */
-        "and $~0xfff, %rbx\n"
+        /* Calculate base: rbx - offset_of_label_1_from_stub_data_start
+           The offsets in g_payload_off and g_old_entry are relative to stub data start (offset 0)
+           We need to know the offset from stub data start to label 1:
+           This offset is: STUB_START_OFFSET + 8 (pushes) + 5 (call) = STUB_START_OFFSET + 13
+           But we'll encode offsets relative to this label instead */
 
-        /* rdi = real payload addr = base + offset */
+        /* Load payload offset (relative to label 1) */
         "lea g_payload_off(%rip), %rax\n"
         "mov (%rax), %rax\n"
-        "add %rax, %rbx\n"
-        "mov %rbx, %rdi\n"
+        /* rdi = rbx + offset */
+        "lea (%rbx, %rax), %rdi\n"
 
         /* rsi = payload_size */
         "lea g_payload_size(%rip), %rsi\n"
         "mov (%rsi), %rsi\n"
 
+        /* Save rbx for later */
+        "push %rbx\n"
+
         /* decrypt */
         "call decrypt\n"
 
-        /* compute real old entry = base + old_offset */
-        "lea 0f(%rip), %rbx\n"
-        "and $~0xfff, %rbx\n"
-        "lea g_old_entry(%rip), %rax\n"
-        "mov (%rax), %rax\n"
-        "add %rax, %rbx\n"
+        /* Restore rbx */
+        "pop %rbx\n"
 
         /* Print "....WOODY....\n" using write syscall */
         "mov $1, %rax\n"                /* syscall: write */
@@ -93,6 +99,11 @@ void _start(void)
         "lea g_woody_msg(%rip), %rsi\n" /* buf: message */
         "mov $14, %rdx\n"               /* count: 14 bytes */
         "syscall\n"
+
+        /* compute old entry address = rbx + offset */
+        "lea g_old_entry(%rip), %rax\n"
+        "mov (%rax), %rax\n"
+        "lea (%rbx, %rax), %rbx\n"
 
         /* Restore registers */
         "pop %r9\n"
@@ -104,6 +115,5 @@ void _start(void)
 
         /* Jump to original entry */
         "jmp *%rbx\n"
-        "0:\n"
     );
 }

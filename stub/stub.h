@@ -8,8 +8,8 @@
 #define MAGIC_PAYLOAD_SIZE 0xBBBBBBBBBBBBBBBBULL
 #define MAGIC_OLD_ENTRY    0xCCCCCCCCCCCCCCCCULL
 
-extern uint64_t g_old_entry;
-extern uint8_t *g_payload_addr;
+extern int64_t  g_old_entry;
+extern int64_t  g_payload_off;
 extern size_t   g_payload_size;
 
 void decrypt(uint8_t *buf, size_t size);        // XTEA decrypts the encrypted payload
