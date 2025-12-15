@@ -5,12 +5,12 @@
 NAME        = woody-woodpacker
 CC          = cc
 CFLAGS      = -Wall -Wextra -Werror
-INCLUDES    = -Iincludes
+INCLUDES    = -Iincludes -Ilibft/includes
 
 SRCS        = $(wildcard srcs/*.c)
 
 OBJDIR      = objects
-OBJS = objects/elf_inject.o objects/elf_reader64.o objects/main.o
+OBJS = objects/elf_inject.o objects/elf_reader64.o objects/main.o objects/ft_memset.o objects/ft_memcpy.o
 
 STUB_SRC    = stub/stub.c
 STUB_OBJ    = stub/stub.o
@@ -42,6 +42,10 @@ $(STUB_OBJ): $(STUB_SRC) stub/stub.ld
 
 # Compile .c → objects/*.o
 $(OBJDIR)/%.o: srcs/%.c
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+
+# Compile libft .c → objects/*.o
+$(OBJDIR)/%.o: libft/srcs/%.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 # ============================= #

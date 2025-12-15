@@ -1,4 +1,5 @@
 #include "umbrella.h"
+#include "libft.h"
 
 #define MAGIC_PAYLOAD_ADDR 0xAAAAAAAAAAAAAAAAULL
 #define MAGIC_PAYLOAD_SIZE 0xBBBBBBBBBBBBBBBBULL
@@ -108,10 +109,10 @@ int inject_payload(void *map, size_t mapsize, ElfInfo *info,
     }
 
     /* 4. Inject payload in executable segment */
-    memcpy((char *)map + stub_off, payload, payload_size);
+    ft_memcpy((char *)map + stub_off, payload, payload_size);
 
     if (aligned_size > payload_size)
-        memset((char *)map + stub_off + payload_size, 0, aligned_size - payload_size);
+        ft_memset((char *)map + stub_off + payload_size, 0, aligned_size - payload_size);
 
     /* 5. Extend executable LOAD segment */
     exec_ph->p_filesz += aligned_size;

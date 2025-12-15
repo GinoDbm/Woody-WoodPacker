@@ -1,11 +1,12 @@
 #include "../includes/umbrella.h"
+#include "libft.h"
 
 /* Function to initialize our struct */
 void init_info(ElfInfo *o)
 {
     if(!o)
         return ;
-    memset(o, 0, sizeof(*o));
+    ft_memset(o, 0, sizeof(*o));
     o->seg_align = 0;
 }
 

@@ -1,6 +1,6 @@
 #include <stdint.h>
 #include <stddef.h>
-#include <string.h>
+#include "libft.h"
 
 #define XTEA_ROUNDS 32
 #define XTEA_DELTA  0x9E3779B9
@@ -44,9 +44,9 @@ void encrypt_text_xtea(unsigned char *text, size_t size, const uint32_t key[4])
 
     for (size_t i = 0; i < blocks; i++)
     {
-        memcpy(v, text + i*8, 8);       // copie sécurisée
+        ft_memcpy(v, text + i*8, 8);       // copie sécurisée
         xtea_encrypt_block(v, key);     // encrypt le bloc
-        memcpy(text + i*8, v, 8);       // write back
+        ft_memcpy(text + i*8, v, 8);       // write back
     }
 }
 
@@ -58,8 +58,8 @@ void decrypt_text_xtea(unsigned char *text, size_t size, const uint32_t key[4])
 
     for (size_t i = 0; i < blocks; i++)
     {
-        memcpy(v, text + i*8, 8);       // copie sécurisée
+        ft_memcpy(v, text + i*8, 8);       // copie sécurisée
         xtea_decrypt_block(v, key);     // decrypt le bloc
-        memcpy(text + i*8, v, 8);       // write back
+        ft_memcpy(text + i*8, v, 8);       // write back
     }
 }
