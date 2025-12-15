@@ -1,5 +1,8 @@
 #include "umbrella.h"
 #include "libft.h"
+#include <stdint.h>
+#include <stddef.h>
+#include <string.h>
 
 #define MAGIC_PAYLOAD_ADDR 0xAAAAAAAAAAAAAAAAULL
 #define MAGIC_PAYLOAD_SIZE 0xBBBBBBBBBBBBBBBBULL
@@ -34,14 +37,6 @@ size_t align_size(size_t size, size_t align)
     return (align == 0) ? size : (size + align - 1) & ~(align - 1);
 }
 
-/* ============================================================ 
-   patch_stub — nouvelle version compatible avec le stub actuel
-   Patch les variables globales g_payload_addr / size / old_entry
-   ============================================================ */
-#include <stdint.h>
-#include <stddef.h>
-#include <string.h>
-
 void patch_stub(unsigned char *stub, size_t stub_size, uint64_t payload_rel_off, uint64_t payload_size, uint64_t old_entry_rel_off)
 {
     for (size_t i = 0; i < stub_size - 8; i++)
@@ -59,15 +54,10 @@ void patch_stub(unsigned char *stub, size_t stub_size, uint64_t payload_rel_off,
     }
 }
 
-
-
-
 /* ============================================================ 
    inject_payload
    ============================================================ */
-int inject_payload(void *map, size_t mapsize, ElfInfo *info,
-                   unsigned char *payload, size_t payload_size,
-                   uint64_t *old_entry)
+int inject_payload(void *map, size_t mapsize, ElfInfo *info, unsigned char *payload, size_t payload_size, uint64_t *old_entry)
 {
     if (!map || !info || !payload || payload_size == 0)
         return -1;

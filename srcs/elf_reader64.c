@@ -61,7 +61,7 @@ void *map_file(const char *path, size_t *size_out, int *out_fd)
     return (map);
 }
 
-/* Function that checks if the file is a ELF64 file. */
+/* Function that checks if the file is an ELF64 file. */
 int validate_elf64(void *map, size_t mapsize)
 {
     if (!map || mapsize < EI_NIDENT)
