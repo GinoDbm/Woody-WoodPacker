@@ -44,9 +44,9 @@ void encrypt_text_xtea(unsigned char *text, size_t size, const uint32_t key[4])
 
     for (size_t i = 0; i < blocks; i++)
     {
-        ft_memcpy(v, text + i*8, 8);       // copie sécurisée
-        xtea_encrypt_block(v, key);     // encrypt le bloc
-        ft_memcpy(text + i*8, v, 8);       // write back
+        ft_memcpy(v, text + i*8, 8);       // Secured copy
+        xtea_encrypt_block(v, key);        // Encrypting the block
+        ft_memcpy(text + i*8, v, 8);       // Write back
     }
 }
 
@@ -58,8 +58,8 @@ void decrypt_text_xtea(unsigned char *text, size_t size, const uint32_t key[4])
 
     for (size_t i = 0; i < blocks; i++)
     {
-        ft_memcpy(v, text + i*8, 8);       // copie sécurisée
-        xtea_decrypt_block(v, key);     // decrypt le bloc
-        ft_memcpy(text + i*8, v, 8);       // write back
+        ft_memcpy(v, text + i*8, 8);       // Secured copy
+        xtea_decrypt_block(v, key);        // Decrypting the block
+        ft_memcpy(text + i*8, v, 8);       // Write back
     }
 }

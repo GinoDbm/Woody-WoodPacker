@@ -150,8 +150,7 @@ The full buffer functions handle encrypting/decrypting arbitrary data:
 
     After:  [ENCRYP0][ENCRYP1][ENCRYP2]
 
-    NOTE: Any leftover bytes (size % 8 != 0) are NOT encrypted!
-          Make sure your data size is a multiple of 8.
+    NOTE: Any leftover bytes (size % 8 != 0) are not encrypted
 
 ================================================================================
                          VISUAL ENCRYPTION ROUND
