@@ -1,12 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <elf.h>
+#include "../includes/umbrella.h"
 
 void patch_stub(unsigned char *stub, size_t stub_size, uint64_t payload_addr, uint64_t payload_size, uint64_t original_entry);
 void encrypt_text_xtea(unsigned char *text, size_t size, const uint32_t key[4]);
@@ -34,18 +26,20 @@ int main(int ac, char **av)
     }
 
     struct stat st;
-    if (fstat(fd, &st) < 0) 
+    if (fstat(fd, &st) < 0)
     {
-         perror("fstat");
-        return 1; 
+        perror("fstat");
+        close(fd);
+        return 1;
     }
 
     /* Map file read-only to get the content */
     uint8_t *file_map = mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
-    if (file_map == MAP_FAILED) 
+    if (file_map == MAP_FAILED)
     {
         perror("mmap");
-        return 1; 
+        close(fd);
+        return 1;
     }
 
     /* Calculate stub size for total allocation */

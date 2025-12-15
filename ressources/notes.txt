@@ -49,3 +49,33 @@ Apres les segments, on a la Table des sections (Section Header Table), chaque se
 
 (Source : https://refspecs.linuxbase.org/elf/gabi4+/ch4.sheader.html)
 
+----------------------------------------------------------------------------
+
+Flags de compilation pour le stub :
+
+-ffreestanding : Flag pour dire au compilo que la libraire standard peut ne pas exister et que
+                 le programme peut commencer autre part qu'au main. Idéal pour les stubs.
+
+-fno-pie : Flag pour que le code généré ait des adresses absolues et non relatives.
+
+-fno-asynchronous-unwind-tables : Flag pour ne pas générer d'unwind table, on a donc un binaire plus petit et compilation
+                                  un peu plus rapide. (source : https://www.intel.com/content/www/us/en/docs/dpcpp-cpp-compiler/developer-guide-reference/2024-2/fasynchronous-unwind-tables.html)
+
+--fno-stack-protector : Flag qui désactive la protection de la stack, sinon GCC insère un guard et il y a besoin d'une libc.
+                        Sans ce flag, on ne pourrait pas compiler en -ffreestanding.
+
+Linker elf :
+
+-T stub/stub.ld : Va utiliser notre linker perso stub/stub.ld
+
+-nostdlib : Ne link aucune librairie standard.
+
+Ré-inclusion du binaire :
+
+ld -r -b binary -o $(STUB_OBJ) $(STUB_BIN)
+
+-b binary : Traite le fichier comme un blob
+
+-r : Link partiel (le .o est relogeable).
+
+Notre binaire est donc un symbole et linkable dans un autre programme.
