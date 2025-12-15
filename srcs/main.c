@@ -59,26 +59,41 @@ int main(int ac, char **av)
     munmap(file_map, st.st_size);
     close(fd);
 
-    Elf64_Ehdr *eh = (Elf64_Ehdr *)map;
-    Elf64_Phdr *ph = (Elf64_Phdr *)(map + eh->e_phoff);
+    /* Validate ELF header bounds */
+    if ((size_t)st.st_size < sizeof(Elf64_Ehdr))
+    {
+        fprintf(stderr, "File too small for ELF header\n");
+        munmap(map, final_size);
+        return 1;
+    }
 
-    //printf("eh->e_phoff = %lu\n", (uint64_t)eh->e_phoff);
-    //printf("eh->e_phnum = %u\n", eh->e_phnum);
-    //printf("st.st_size = %lu\n", (uint64_t)st.st_size);
+    Elf64_Ehdr *eh = (Elf64_Ehdr *)map;
+
+    /* Validate program header table bounds */
+    if (eh->e_phoff > (size_t)st.st_size ||
+        (eh->e_phnum > 0 && eh->e_phoff + (size_t)eh->e_phnum * sizeof(Elf64_Phdr) > (size_t)st.st_size))
+    {
+        fprintf(stderr, "Invalid ELF: program headers out of bounds\n");
+        munmap(map, final_size);
+        return 1;
+    }
+
+    Elf64_Phdr *ph = (Elf64_Phdr *)(map + eh->e_phoff);
 
     /*--------- Find segment PT_LOAD RX ---------- */
     Elf64_Phdr *text_seg = NULL;
-    for (int i = 0; i < eh->e_phnum; i++) 
+    for (int i = 0; i < eh->e_phnum; i++)
     {
-        if (ph[i].p_type == PT_LOAD && (ph[i].p_flags & PF_X)) 
+        if (ph[i].p_type == PT_LOAD && (ph[i].p_flags & PF_X))
         {
             text_seg = &ph[i];
             break;
         }
     }
-    if (!text_seg) 
+    if (!text_seg)
     {
         fprintf(stderr, "No PT_LOAD executable segment\n");
+        munmap(map, final_size);
         return 1;
     }
 
@@ -86,6 +101,15 @@ int main(int ac, char **av)
     uint64_t payload_offset = text_seg->p_offset;
     uint64_t payload_size   = text_seg->p_filesz;
     uint64_t payload_addr   = text_seg->p_vaddr;
+
+    /* Validate text segment bounds */
+    if (payload_offset > (size_t)st.st_size ||
+        payload_offset + payload_size > (size_t)st.st_size)
+    {
+        fprintf(stderr, "Invalid ELF: text segment out of bounds\n");
+        munmap(map, final_size);
+        return 1;
+    }
 
     unsigned char *payload = map + payload_offset;
 
@@ -99,6 +123,14 @@ int main(int ac, char **av)
 
     uint64_t stub_file_offset = text_seg->p_offset + text_seg->p_filesz;
     uint64_t stub_vaddr       = text_seg->p_vaddr + text_seg->p_filesz;
+
+    /* Validate stub injection bounds */
+    if (stub_file_offset + stub_size > final_size)
+    {
+        fprintf(stderr, "Invalid ELF: not enough space for stub\n");
+        munmap(map, final_size);
+        return 1;
+    }
 
     /* ---- Increase size of RX segment ---- */
     text_seg->p_filesz += stub_size;

@@ -39,18 +39,26 @@ size_t align_size(size_t size, size_t align)
 
 void patch_stub(unsigned char *stub, size_t stub_size, uint64_t payload_rel_off, uint64_t payload_size, uint64_t old_entry_rel_off)
 {
-    for (size_t i = 0; i < stub_size - 8; i++)
+    if (stub_size < 8)
+        return;
+
+    for (size_t i = 0; i <= stub_size - 8; i++)
     {
-        uint64_t *p = (uint64_t *)(stub + i);
+        uint64_t val;
+        memcpy(&val, stub + i, sizeof(uint64_t));
 
-        if (*p == MAGIC_PAYLOAD_ADDR)
-            *p = payload_rel_off;
-
-        else if (*p == MAGIC_PAYLOAD_SIZE)
-            *p = payload_size;
-
-        else if (*p == MAGIC_OLD_ENTRY)
-            *p = old_entry_rel_off;
+        if (val == MAGIC_PAYLOAD_ADDR)
+        {
+            memcpy(stub + i, &payload_rel_off, sizeof(uint64_t));
+        }
+        else if (val == MAGIC_PAYLOAD_SIZE)
+        {
+            memcpy(stub + i, &payload_size, sizeof(uint64_t));
+        }
+        else if (val == MAGIC_OLD_ENTRY)
+        {
+            memcpy(stub + i, &old_entry_rel_off, sizeof(uint64_t));
+        }
     }
 }
 
