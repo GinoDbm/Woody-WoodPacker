@@ -9,17 +9,14 @@
 #include <elf.h>
 
 void patch_stub(unsigned char *stub, size_t stub_size, uint64_t payload_addr, uint64_t payload_size, uint64_t original_entry);
+void encrypt_text_xtea(unsigned char *text, size_t size, const uint32_t key[4]);
 
 // Binary STUB created by : ld -r -b binary stub.bin
 extern unsigned char _binary_stub_stub_bin_start[];
 extern unsigned char _binary_stub_stub_bin_end[];
 
-static void encrypt(unsigned char *p, size_t size)
-{
-    const uint64_t key = 0x4242424242424242ULL;
-    for (size_t i = 0; i < size; i++)
-        p[i] ^= ((unsigned char *)&key)[i & 7];
-}
+// XTEA 128-bit key (4 x 32-bit)
+static const uint32_t g_xtea_key[4] = {0x42424242, 0x42424242, 0x42424242, 0x42424242};
 
 int main(int ac, char **av)
 {
@@ -98,7 +95,7 @@ int main(int ac, char **av)
 
     unsigned char *payload = map + payload_offset;
 
-    encrypt(payload, payload_size);
+    encrypt_text_xtea(payload, payload_size, g_xtea_key);
 
     uint64_t original_entry = eh->e_entry;
 
@@ -127,8 +124,8 @@ int main(int ac, char **av)
     patch_stub(map + stub_file_offset, stub_size, payload_addr - aligned_stub_page, payload_size, original_entry - aligned_stub_page);
 
 /* ---- Redirect entry ---- */
-/* stub.bin layout: .data (48 bytes) + decrypt (0x6e bytes) + _start so _start is at offset 0x30 + 0x6e = 0x9e in stub.bin */
-    #define STUB_START_OFFSET 0x9e
+/* stub.bin layout with XTEA: .data (48 bytes) + decrypt + _start at offset 0x2de */
+    #define STUB_START_OFFSET 0x2de
     eh = (Elf64_Ehdr *)map;
     eh->e_entry = stub_vaddr + STUB_START_OFFSET;
 

@@ -1,0 +1,208 @@
+================================================================================
+                        WOODY WOODPACKER - RESUME DU PROJET
+================================================================================
+
+Ce projet est un "packer" de binaires ELF64. Son but est de chiffrer le code
+executable d'un programme et d'y injecter un "stub" de dechiffrement qui sera
+execute au lancement.
+
+================================================================================
+                            STRUCTURE DU PROJET
+================================================================================
+
+woody-woodpacker    -> Executable principal (le packer)
+srcs/main.c         -> Point d'entree, logique principale du packer
+srcs/elf_inject.c   -> Fonctions d'injection et de patch du stub
+srcs/elf_reader64.c -> Lecture et validation des fichiers ELF64
+stub/stub.c         -> Code du stub (dechiffreur) en assembleur inline
+stub/stub.ld        -> Script linker pour positionner les sections du stub
+
+================================================================================
+                          FONCTIONNEMENT GENERAL
+================================================================================
+
+Le packer transforme un binaire ELF64 en un binaire "packe" nomme "woody".
+Voici les etapes :
+
+1. LECTURE DU BINAIRE CIBLE
+   - Ouverture et mapping du fichier ELF en memoire (mmap)
+   - Verification qu'il s'agit bien d'un ELF64 valide
+
+2. RECHERCHE DU SEGMENT EXECUTABLE
+   - Parcours des Program Headers (Elf64_Phdr)
+   - Recherche du segment PT_LOAD avec le flag PF_X (executable)
+   - Ce segment contient le code .text du programme
+
+3. CHIFFREMENT DU CODE
+   - Le contenu du segment executable est chiffre avec un XOR
+   - Cle utilisee : 0x4242424242424242 (8 octets)
+   - Chaque octet est XORe avec l'octet correspondant de la cle
+
+4. INJECTION DU STUB
+   - Le stub binaire est copie a la fin du segment executable
+   - La taille du segment (p_filesz et p_memsz) est augmentee
+   - Le flag PF_W (write) est ajoute pour permettre le dechiffrement
+
+5. PATCH DU STUB
+   - Le stub contient des "magic values" qui sont remplacees :
+     * 0xAAAAAAAAAAAAAAAA -> Offset relatif du payload (code chiffre)
+     * 0xBBBBBBBBBBBBBBBB -> Taille du payload
+     * 0xCCCCCCCCCCCCCCCC -> Offset relatif de l'ancien entry point
+
+6. REDIRECTION DE L'ENTRY POINT
+   - L'entry point (e_entry) du binaire est modifie
+   - Il pointe maintenant vers la fonction _start du stub
+
+7. ECRITURE DU FICHIER "woody"
+   - Le binaire modifie est ecrit dans un nouveau fichier
+   - Permissions 0755 (executable)
+
+================================================================================
+                          FONCTIONNEMENT DU STUB
+================================================================================
+
+Le stub est compile separement en binaire pur (sans headers ELF).
+Il est integre au packer via "ld -r -b binary".
+
+Quand le binaire "woody" est execute :
+
+1. _start DU STUB EST APPELE
+   - C'est le nouvel entry point du programme
+
+2. SAUVEGARDE DES REGISTRES
+   - Les registres importants sont sauvegardes sur la pile
+   - RDX contient rtld_fini (pointeur du dynamic linker)
+
+3. CALCUL DE L'ADRESSE DE BASE
+   - Utilisation de l'instruction LEA avec RIP pour obtenir l'adresse courante
+   - Alignement sur la page (AND avec ~0xFFF) pour trouver la base ELF
+
+4. DECHIFFREMENT
+   - Calcul de l'adresse reelle du code chiffre (base + offset)
+   - Appel de la fonction decrypt() avec l'adresse et la taille
+   - XOR inverse pour retrouver le code original
+
+5. AFFICHAGE DE "....WOODY...."
+   - Syscall write(1, "....WOODY....\n", 14)
+   - Affiche le message sur stdout
+
+6. RESTAURATION ET SAUT
+   - Les registres sont restaures
+   - Saut vers l'entry point original du programme
+   - Le programme s'execute normalement
+
+================================================================================
+                            ALGORITHME DE CHIFFREMENT
+================================================================================
+
+Le projet utilise l'algorithme XTEA (eXtended Tiny Encryption Algorithm).
+
+--- CARACTERISTIQUES DE XTEA ---
+
+- Algorithme de chiffrement par bloc
+- Taille de bloc : 64 bits (2 x uint32_t)
+- Taille de cle : 128 bits (4 x uint32_t)
+- Nombre de rounds : 32
+- Constante delta : 0x9E3779B9 (derivee du nombre d'or)
+
+--- CLE UTILISEE ---
+
+    const uint32_t key[4] = {0x42424242, 0x42424242, 0x42424242, 0x42424242};
+
+--- IMPLEMENTATIONS ---
+
+Chiffrement (main.c via encrypt.c) :
+    - Fonction : encrypt_text_xtea()
+    - Parcourt le payload par blocs de 8 octets
+    - Applique xtea_encrypt_block() sur chaque bloc
+
+Dechiffrement (stub.c) :
+    - Fonction : decrypt()
+    - Implementation inline complete de XTEA
+    - La cle est hardcodee dans la fonction (evite les problemes d'adressage)
+    - Lit/ecrit les octets manuellement (pas de memcpy pour freestanding)
+
+--- ALGORITHME XTEA (pseudo-code) ---
+
+    Pour chaque bloc de 64 bits (v0, v1) :
+        sum = 32 * delta
+        Pour i de 0 a 31 :
+            v1 -= (((v0 << 4) ^ (v0 >> 5)) + v0) ^ (sum + key[(sum >> 11) & 3])
+            sum -= delta
+            v0 -= (((v1 << 4) ^ (v1 >> 5)) + v1) ^ (sum + key[sum & 3])
+
+Note : Les octets en fin de payload non alignes sur 8 octets ne sont pas chiffres.
+
+================================================================================
+                            COMPILATION DU STUB
+================================================================================
+
+Le stub est compile de maniere speciale (voir Makefile) :
+
+1. Compilation en code "freestanding" (sans dependances systeme)
+   cc -ffreestanding -fno-pie -fno-asynchronous-unwind-tables -fno-stack-protector
+
+2. Linkage avec un script personnalise (stub.ld)
+   - Place .data en premier (variables globales avec les magic values)
+   - Puis .text (code executable)
+
+3. Extraction du binaire pur
+   objcopy -O binary stub_linked.elf stub.bin
+
+4. Conversion en fichier objet pour le linker
+   ld -r -b binary -o stub.o stub.bin
+
+Cela cree les symboles :
+   - _binary_stub_stub_bin_start : debut du stub
+   - _binary_stub_stub_bin_end   : fin du stub
+
+================================================================================
+                              FORMAT ELF64
+================================================================================
+
+Structures importantes :
+
+Elf64_Ehdr (ELF Header) :
+   - e_entry  : Point d'entree du programme
+   - e_phoff  : Offset de la table des Program Headers
+   - e_phnum  : Nombre de Program Headers
+
+Elf64_Phdr (Program Header) :
+   - p_type   : Type de segment (PT_LOAD, PT_DYNAMIC, etc.)
+   - p_flags  : Permissions (PF_R, PF_W, PF_X)
+   - p_offset : Position dans le fichier
+   - p_vaddr  : Adresse virtuelle en memoire
+   - p_filesz : Taille dans le fichier
+   - p_memsz  : Taille en memoire
+
+================================================================================
+                                UTILISATION
+================================================================================
+
+Compilation :
+    make
+
+Utilisation :
+    ./woody-woodpacker <binaire_elf64>
+
+Resultat :
+    Un fichier "woody" est cree dans le repertoire courant.
+    Ce fichier affiche "....WOODY...." puis execute le programme original.
+
+Exemple :
+    $ ./woody-woodpacker /bin/ls
+    Woody generated !
+    $ ./woody
+    ....WOODY....
+    [sortie normale de ls]
+
+================================================================================
+                              LIMITATIONS
+================================================================================
+
+- Fonctionne uniquement avec les binaires ELF64
+- Le binaire cible doit avoir un segment PT_LOAD executable
+- Le chiffrement XOR est faible (a des fins educatives uniquement)
+- Ne fonctionne pas avec les binaires statiquement lies de maniere complexe
+
+================================================================================

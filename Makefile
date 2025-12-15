@@ -10,7 +10,7 @@ INCLUDES    = -Iincludes -Ilibft/includes
 SRCS        = $(wildcard srcs/*.c)
 
 OBJDIR      = objects
-OBJS = objects/elf_inject.o objects/elf_reader64.o objects/main.o objects/ft_memset.o objects/ft_memcpy.o
+OBJS 		= objects/elf_inject.o objects/elf_reader64.o objects/main.o objects/encrypt.o objects/ft_memset.o objects/ft_memcpy.o
 
 STUB_SRC    = stub/stub.c
 STUB_OBJ    = stub/stub.o
