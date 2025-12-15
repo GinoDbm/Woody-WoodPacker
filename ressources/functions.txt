@@ -6,12 +6,15 @@
                               ELF_READER64.C
 --------------------------------------------------------------------------------
 
-void init_info(ElfInfo *o)
-    Initializes an ElfInfo structure by zeroing all its fields using memset.
-    Sets seg_align to 0 explicitly. Returns early if pointer is NULL.
+void init_info(ElfInfo *o) :
 
-void *map_file(const char *path, size_t *size_out, int *out_fd)
-    Opens and memory-maps a file for reading/writing (MAP_PRIVATE).
+Initializes an ElfInfo structure by zeroing all its fields using memset.
+Sets seg_align to 0 explicitly. Returns early if pointer is NULL.
+
+-------------------------------------------------------------------------
+void *map_file(const char *path, size_t *size_out, int *out_fd) :
+
+Opens and memory-maps a file for reading/writing (MAP_PRIVATE).
     - Opens file with O_RDONLY
     - Gets file size using lseek(SEEK_END)
     - Maps with PROT_READ | PROT_WRITE, MAP_PRIVATE (copy-on-write)
@@ -19,15 +22,19 @@ void *map_file(const char *path, size_t *size_out, int *out_fd)
     - Optionally returns fd in out_fd, otherwise closes it
     - Returns NULL on any error (empty file, open/mmap failure)
 
-int validate_elf64(void *map, size_t mapsize)
-    Validates that the mapped file is a valid ELF64 binary.
+-------------------------------------------------------------------------
+int validate_elf64(void *map, size_t mapsize) :
+
+Validates that the mapped file is a valid ELF64 binary.
     - Checks minimum size (EI_NIDENT bytes)
     - Verifies ELF magic bytes (0x7F 'E' 'L' 'F')
     - Confirms 64-bit class (ELFCLASS64)
     - Returns 0 on success, -1 on failure
 
-int parse_elf64(void *map, size_t mapsize, ElfInfo *o)
-    Parses ELF64 headers and fills the ElfInfo structure.
+-------------------------------------------------------------------------
+int parse_elf64(void *map, size_t mapsize, ElfInfo *o) :
+
+Parses ELF64 headers and fills the ElfInfo structure.
     - Validates header size and program header bounds
     - Extracts entry point and PIE status (ET_DYN check)
     - Iterates program headers to find executable PT_LOAD segment
@@ -37,32 +44,33 @@ int parse_elf64(void *map, size_t mapsize, ElfInfo *o)
 --------------------------------------------------------------------------------
                               ELF_INJECT.C
 --------------------------------------------------------------------------------
+Elf64_Phdr *find_exec_segment(void *map, size_t mapsize) :
 
-Elf64_Phdr *find_exec_segment(void *map, size_t mapsize)
-    Locates the first executable PT_LOAD segment in an ELF.
+Locates the first executable PT_LOAD segment in an ELF.
     - Validates map and size
     - Checks program header bounds
     - Returns pointer to first PT_LOAD with PF_X flag, or NULL
 
-size_t align_size(size_t size, size_t align)
-    Rounds up a size to the next alignment boundary.
-    Formula: (size + align - 1) & ~(align - 1)
-    Returns size unchanged if align is 0.
+-------------------------------------------------------------------------
+size_t align_size(size_t size, size_t align) :
 
-void patch_stub(unsigned char *stub, size_t stub_size,
-                uint64_t payload_rel_off, uint64_t payload_size,
-                uint64_t old_entry_rel_off)
-    Patches magic placeholder values in the stub with actual runtime values.
-    Scans stub for:
+Rounds up a size to the next alignment boundary.
+Formula: (size + align - 1) & ~(align - 1)
+Returns size unchanged if align is 0.
+-------------------------------------------------------------------------
+void patch_stub(unsigned char *stub, size_t stub_size,uint64_t payload_rel_off, uint64_t payload_size, uint64_t old_entry_rel_off) :
+
+Patches magic placeholder values in the stub with actual runtime values.
+Scans stub for:
     - MAGIC_PAYLOAD_ADDR (0xAAAA...) -> payload relative offset
     - MAGIC_PAYLOAD_SIZE (0xBBBB...) -> payload size
     - MAGIC_OLD_ENTRY    (0xCCCC...) -> original entry point offset
 
-int inject_payload(void *map, size_t mapsize, ElfInfo *info,
-                   unsigned char *payload, size_t payload_size,
-                   uint64_t *old_entry)
-    Injects a payload (stub) into the executable segment of an ELF.
-    Steps:
+-------------------------------------------------------------------------
+int inject_payload(void *map, size_t mapsize, ElfInfo *info, unsigned char *payload, size_t payload_size, uint64_t *old_entry) :
+ 
+Injects a payload (stub) into the executable segment of an ELF.
+Steps:
     1. Finds executable PT_LOAD segment
     2. Saves original entry point in old_entry
     3. Computes injection offset (end of segment's file data)
@@ -74,44 +82,52 @@ int inject_payload(void *map, size_t mapsize, ElfInfo *info,
     9. Updates info struct with new offset/vaddr
     Returns 0 on success, -1 on failure.
 
-int write_infected_file(const char *path, void *map, size_t size)
-    Writes the modified ELF binary to disk.
+-------------------------------------------------------------------------
+int write_infected_file(const char *path, void *map, size_t size) :
+
+ Writes the modified ELF binary to disk.
     - Creates file with mode 0755 (executable)
     - Truncates if exists (O_TRUNC)
     - Writes entire mapped content
     - Returns 0 on success, -1 on failure
 
-int already_infected(void *map, ElfInfo *info)
-    Checks if an ELF has already been packed.
-    Compares current entry point against expected stub entry
-    (seg_vaddr + seg_filesz). Returns 1 if infected, 0 otherwise.
+-------------------------------------------------------------------------
+int already_infected(void *map, ElfInfo *info) :
+
+Checks if an ELF has already been packed.
+Compares current entry point against expected stub entry(seg_vaddr + seg_filesz). Returns 1 if infected, 0 otherwise.
 
 --------------------------------------------------------------------------------
                               ENCRYPT.C
 --------------------------------------------------------------------------------
 
-void xtea_encrypt_block(uint32_t v[2], const uint32_t k[4])
-    Encrypts a single 64-bit block (two 32-bit words) using XTEA.
+void xtea_encrypt_block(uint32_t v[2], const uint32_t k[4]) :
+
+Encrypts a single 64-bit block (two 32-bit words) using XTEA.
     - Uses 32 rounds with delta 0x9E3779B9
-    - Feistel-like structure with shifts and XORs
     - Key schedule uses sum & 3 and (sum >> 11) & 3 for key selection
     - Modifies v[0] and v[1] in place
 
-void xtea_decrypt_block(uint32_t v[2], const uint32_t k[4])
-    Decrypts a single 64-bit XTEA block.
+-------------------------------------------------------------------------
+void xtea_decrypt_block(uint32_t v[2], const uint32_t k[4]) :
+
+Decrypts a single 64-bit XTEA block.
     - Reverse of encrypt: starts with sum = 32 * delta
     - Applies rounds in reverse order
     - Modifies v[0] and v[1] in place
+    
+-------------------------------------------------------------------------
+void encrypt_text_xtea(unsigned char *text, size_t size, const uint32_t key[4]) :
 
-void encrypt_text_xtea(unsigned char *text, size_t size, const uint32_t key[4])
-    Encrypts an entire buffer using XTEA in ECB mode.
+Encrypts an entire buffer using XTEA in ECB mode.
     - Processes 8-byte blocks
     - Uses memcpy for safe unaligned access
     - Trailing bytes (size % 8) are NOT encrypted
     - Modifies buffer in place
 
+-------------------------------------------------------------------------
 void decrypt_text_xtea(unsigned char *text, size_t size, const uint32_t key[4])
-    Decrypts an entire XTEA-encrypted buffer.
+Decrypts an entire XTEA-encrypted buffer.
     - Same block processing as encrypt
     - Processes only complete 8-byte blocks
     - Modifies buffer in place
@@ -119,16 +135,16 @@ void decrypt_text_xtea(unsigned char *text, size_t size, const uint32_t key[4])
 --------------------------------------------------------------------------------
                               STUB.C
 --------------------------------------------------------------------------------
-
 void decrypt(uint8_t *buf, size_t size)
     Simple XOR decryption using a 64-bit key (0x4242424242424242).
     - Iterates through buffer byte by byte
     - XORs each byte with corresponding key byte (i & 7 for index)
     - Same function works for encrypt/decrypt (XOR is symmetric)
 
+-------------------------------------------------------------------------
 void _start(void)
-    Stub entry point (naked function, pure assembly).
-    Execution flow:
+Stub entry point (naked function, pure assembly).
+Execution flow:
     1. Saves registers (rdx, rdi, rsi, rcx, r8, r9) for original _start
     2. Gets current RIP and aligns to page boundary (ELF base address)
     3. Computes real payload address: base + g_payload_off
@@ -143,7 +159,7 @@ void _start(void)
 ================================================================================
 
 ElfInfo (defined in elf_reader64.h)
-    Holds parsed ELF information:
+Holds parsed ELF information:
     - is64: 1 if 64-bit ELF
     - is_pie: 1 if position-independent (ET_DYN)
     - entry: original entry point

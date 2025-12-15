@@ -5,6 +5,9 @@ uint64_t g_old_entry    = MAGIC_OLD_ENTRY;    // VA offset, not absolute address
 uint64_t g_payload_off  = MAGIC_PAYLOAD_ADDR; // offset relative to ELF base
 size_t   g_payload_size = MAGIC_PAYLOAD_SIZE;
 
+/* WOODY message (14 bytes: 13 chars + newline) */
+char g_woody_msg[16] = "....WOODY....\n";
+
 /* Simple XOR decrypt */
 void decrypt(uint8_t *buf, size_t size)
 {
@@ -53,6 +56,13 @@ void _start(void)
         "lea g_old_entry(%rip), %rax\n"
         "mov (%rax), %rax\n"
         "add %rax, %rbx\n"
+
+        /* Print "....WOODY....\n" using write syscall */
+        "mov $1, %rax\n"              /* syscall: write */
+        "mov $1, %rdi\n"              /* fd: stdout */
+        "lea g_woody_msg(%rip), %rsi\n" /* buf: message */
+        "mov $14, %rdx\n"             /* count: 14 bytes */
+        "syscall\n"
 
         /* Restore registers */
         "pop %r9\n"

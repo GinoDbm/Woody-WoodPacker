@@ -61,5 +61,3 @@ fclean: clean
 	rm -f woody
 
 re: fclean all
-
-.PHONY: all clean fclean re

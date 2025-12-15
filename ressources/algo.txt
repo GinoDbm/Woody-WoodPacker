@@ -1,0 +1,225 @@
+================================================================================
+                         XTEA ALGORITHM EXPLANATION
+                    (eXtended Tiny Encryption Algorithm)
+================================================================================
+
+XTEA is a symmetric block cipher. This means:
+  - The SAME key is used to encrypt AND decrypt
+  - It works on fixed-size "blocks" of data (64 bits = 8 bytes)
+
+================================================================================
+                              CONSTANTS
+================================================================================
+
+XTEA_ROUNDS = 32
+    -> The algorithm runs 32 iterations (rounds) to mix the data thoroughly.
+    -> More rounds = more secure, but slower.
+    -> 32 is the standard recommended value.
+
+XTEA_DELTA = 0x9E3779B9
+    -> This is a mathematical constant derived from the golden ratio.
+    -> Golden ratio = (sqrt(5) - 1) / 2 = 0.6180339887...
+    -> DELTA = 0x9E3779B9 = floor(2^32 / golden ratio)
+    -> It's used to prevent attacks based on symmetry in the algorithm.
+    -> This constant changes the "sum" variable each round.
+
+================================================================================
+                              KEY FORMAT
+================================================================================
+
+The key is 128 bits total, split into 4 parts:
+
+    key[4] = { k[0], k[1], k[2], k[3] }
+              |_____|_____|_____|_____|
+               32b    32b   32b   32b   = 128 bits total
+
+Each round uses a DIFFERENT part of the key, selected by:
+    - k[sum & 3]         -> uses bits 0-1 of sum  (values 0,1,2,3)
+    - k[(sum >> 11) & 3] -> uses bits 11-12 of sum (values 0,1,2,3)
+
+================================================================================
+                           BLOCK FORMAT
+================================================================================
+
+Each block is 64 bits, split into two halves:
+
+    v[2] = { v[0], v[1] }
+            |_____|_____|
+             32b    32b   = 64 bits total
+
+    v0 = LEFT half  (first 4 bytes)
+    v1 = RIGHT half (last 4 bytes)
+
+================================================================================
+                    ENCRYPTION (xtea_encrypt_block)
+================================================================================
+
+Initial state:
+    v0 = v[0]   (left half of plaintext)
+    v1 = v[1]   (right half of plaintext)
+    sum = 0     (accumulator starts at zero)
+
+For each round (32 times):
+
+    STEP 1: Update v0 (left half)
+    ----------------------------------------------------------------
+    v0 += (((v1 << 4) ^ (v1 >> 5)) + v1) ^ (sum + k[sum & 3])
+
+    Breaking this down:
+
+    a. (v1 << 4)     -> Shift v1 left by 4 bits (multiply by 16)
+    b. (v1 >> 5)     -> Shift v1 right by 5 bits (divide by 32)
+    c. (a ^ b)       -> XOR these two shifted values together
+    d. (c + v1)      -> Add original v1 to create "mixing term"
+    e. (sum & 3)     -> Get key index (0, 1, 2, or 3)
+    f. (sum + k[e])  -> Add sum to selected key part
+    g. (d ^ f)       -> XOR mixing term with key term
+    h. v0 += g       -> Add result to v0
+
+    STEP 2: Advance the sum
+    ----------------------------------------------------------------
+    sum += XTEA_DELTA
+
+    The sum increases by DELTA each round:
+        Round 0:  sum = 0x00000000
+        Round 1:  sum = 0x9E3779B9
+        Round 2:  sum = 0x3C6EF372
+        ...and so on (it wraps around due to 32-bit overflow)
+
+    STEP 3: Update v1 (right half)
+    ----------------------------------------------------------------
+    v1 += (((v0 << 4) ^ (v0 >> 5)) + v0) ^ (sum + k[(sum >> 11) & 3])
+
+    Same logic as Step 1, but:
+        - Uses v0 (updated) to modify v1
+        - Uses (sum >> 11) & 3 to select key part
+
+After 32 rounds:
+    v[0] = v0   (encrypted left half)
+    v[1] = v1   (encrypted right half)
+
+================================================================================
+                    DECRYPTION (xtea_decrypt_block)
+================================================================================
+
+Decryption is the REVERSE of encryption:
+
+Initial state:
+    v0 = v[0]   (left half of ciphertext)
+    v1 = v[1]   (right half of ciphertext)
+    sum = 32 * DELTA = 0xC6EF3720  (final sum value from encryption!)
+
+For each round (32 times), in REVERSE order:
+
+    STEP 1: Reverse v1 update (SUBTRACT instead of ADD)
+    ----------------------------------------------------------------
+    v1 -= (((v0 << 4) ^ (v0 >> 5)) + v0) ^ (sum + k[(sum >> 11) & 3])
+
+    STEP 2: Reverse the sum (SUBTRACT instead of ADD)
+    ----------------------------------------------------------------
+    sum -= XTEA_DELTA
+
+    STEP 3: Reverse v0 update (SUBTRACT instead of ADD)
+    ----------------------------------------------------------------
+    v0 -= (((v1 << 4) ^ (v1 >> 5)) + v1) ^ (sum + k[sum & 3])
+
+Notice:
+    - Operations are in REVERSE order (v1 first, then sum, then v0)
+    - All += become -=
+    - The sum STARTS at the final value and counts DOWN
+
+================================================================================
+                  FULL BUFFER ENCRYPTION (encrypt_text_xtea)
+================================================================================
+
+The full buffer functions handle encrypting/decrypting arbitrary data:
+
+    blocks = size / 8    -> Calculate how many 8-byte blocks we have
+
+    For each block:
+        1. ft_memcpy(v, text + i*8, 8)   -> Copy 8 bytes into v[2]
+        2. xtea_encrypt_block(v, key)    -> Encrypt the block
+        3. ft_memcpy(text + i*8, v, 8)   -> Copy encrypted data back
+
+    Memory layout example (24 bytes = 3 blocks):
+
+    Before: [BLOCK0 ][BLOCK1 ][BLOCK2 ]
+             |        |        |
+             i=0      i=1      i=2
+             +0       +8       +16
+
+    After:  [ENCRYP0][ENCRYP1][ENCRYP2]
+
+    NOTE: Any leftover bytes (size % 8 != 0) are NOT encrypted!
+          Make sure your data size is a multiple of 8.
+
+================================================================================
+                         VISUAL ENCRYPTION ROUND
+================================================================================
+
+    +--------+     +--------+
+    |   v0   |     |   v1   |
+    +--------+     +--------+
+        |              |
+        |   +----------+----------+
+        |   |          |          |
+        |   v          v          |
+        |  <<4        >>5         |
+        |   |          |          |
+        |   +----XOR---+          |
+        |        |                |
+        |        +--- + v1 -------+
+        |              |
+        |         "mixing term"
+        |              |
+        |              XOR
+        |              |
+        |         sum + key[i]
+        |              |
+        +-------(+)----+
+               |
+               v
+           new v0
+
+    Then sum += DELTA, and same process for v1 using new v0.
+
+================================================================================
+                           WHY XTEA IS SECURE
+================================================================================
+
+1. BIT DIFFUSION: The <<4 and >>5 shifts spread bits across the value
+   - If you change 1 bit of input, many output bits change
+
+2. NON-LINEARITY: XOR operations combined with addition
+   - Addition carries bits in complex ways
+   - XOR is linear, but combined with + it becomes non-linear
+
+3. KEY MIXING: Different key parts used each round
+   - The key selection (sum & 3) and (sum >> 11 & 3) varies
+   - Makes it hard to attack individual key parts
+
+4. MANY ROUNDS: 32 rounds of mixing
+   - Each round increases the "avalanche effect"
+   - After 32 rounds, every output bit depends on every input bit
+
+================================================================================
+                              SUMMARY
+================================================================================
+
+ENCRYPTION:
+    sum = 0
+    repeat 32 times:
+        v0 += mix(v1) XOR (sum + key[sum & 3])
+        sum += DELTA
+        v1 += mix(v0) XOR (sum + key[(sum>>11) & 3])
+
+DECRYPTION:
+    sum = 32 * DELTA
+    repeat 32 times:
+        v1 -= mix(v0) XOR (sum + key[(sum>>11) & 3])
+        sum -= DELTA
+        v0 -= mix(v1) XOR (sum + key[sum & 3])
+
+Where mix(x) = ((x << 4) ^ (x >> 5)) + x
+
+================================================================================

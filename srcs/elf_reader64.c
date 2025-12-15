@@ -10,7 +10,7 @@ void init_info(ElfInfo *o)
     o->seg_align = 0;
 }
 
-/* Function that mmap the file (read-only) */
+/* Function that mmap the file*/
 void *map_file(const char *path, size_t *size_out, int *out_fd)
 {
     if (!path || !size_out)
